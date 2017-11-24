@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8">
+    <title>Gerador de Referências</title>
+	<script type="text/javascript">
+
+		function generateXMLHttp() 
+		{	//browser diferentes do IE?
+			if (typeof XMLHttpRequest != "undefined") 
+			{	//retorna requisicao AJAX
+				return new XMLHttpRequest(); 
+			} else
+			{	//browser eh IE?
+				if (window.ActiveXObject) 
+				{	//carrega as versoes
+					var versions = ["MSXML2.XMLHttp.5.0", 
+									"MSXML2.XMLHttp.4.0", 
+									"MSXML2.XMLHttp.3.0",
+									"MSXML2.XMLHttp", 
+									"Microsoft.XMLHttp"
+									];
+				}
+			}
+			//tenta criar objeto da versao mais recente
+			for (var i = 0; i < versions.length; i++) 
+			{	try
+				{	//retorna requisicao AJAX
+					return new ActiveXObject(versions[i]); 
+				} catch(e)
+				{
+				}
+			}
+			//informa que o browser nao suporte AJAX
+			alert("Seu navegador não pode trabalhar com Ajax!"); 
+		}
+
+		function gerarCitacaoReferenciaMomografia(event)
+		{	event.preventDefault();
+		 	//criando requisicao AJAX
+			var request = generateXMLHttp();
+
+			//define a funcao de callback que vai tratar os dados quando chegar
+			request.onreadystatechange = function()
+			{	//testa se o estado eh o final
+				if (request.readyState == 4)
+				{	//testa se a resposta foi Ok
+					if (request.status == 200)
+					{	//obtem o objeto pessoa enviada pelo servidor
+						var respostaServidor = JSON.parse(request.responseText);
+						var divReferencia = document.getElementById("divRefCit");
+						var refencia = document.createElement("li");
+						var citacao = document.createElement("li");
+
+						refencia.innerHTML =
+
+						respostaServidor.ultimo_nome.toUpperCase() + ", " +
+						respostaServidor.iniciais + ". " +
+						respostaServidor.titulo.bold() + ". " +
+						respostaServidor.edicao + ". ed. " +
+						respostaServidor.editora + ", " +
+						respostaServidor.local + ", " +
+						respostaServidor.ano + ".";
+
+						citacao.innerHTML =
+
+						"(" + respostaServidor.ultimo_nome.toUpperCase() + ", " +
+						respostaServidor.iniciais + ", " +
+						respostaServidor.ano + ")";
+												
+						divReferencia.appendChild(refencia);
+						divReferencia.appendChild(citacao);
+					}	
+				}
+			};
+		 
+			//configurando a requisicao
+			//parametro 1: tipo de envio GET ou POST
+			//parametro 2: a pagina e valores de parametros HTTP
+			//parametro 3: requisicao deve funcionar de forma assincrona ou nao?
+			request.open("post", "http://127.0.0.1:8081/gerarReferencia" , true);
+		 	request.setRequestHeader("Content-Type", "application/json");
+			//envia a requisicao
+			var requisicao = {
+
+				"ultimo_nome" : document.getElementById("ultimo_nome").value,
+				"iniciais" : document.getElementById("iniciais").value,
+				"titulo" : document.getElementById("titulo").value,
+				"edicao" : document.getElementById("edicao").value,
+				"local" : document.getElementById("local").value,
+				"editora" : document.getElementById("editora").value,
+				"ano" : document.getElementById("ano").value
+			}
+		 	
+			//  request.send(requisicao);
+			request.send(JSON.stringify(requisicao));
+		}
+
+		function inserirCabecalho(idDiv, titulo)
+		{	div = document.getElementById(idDiv);
+			while (div.firstChild !== null)
+			{	div.removeChild(div.firstChild);
+			}
+			titulo2 = document.createElement("h2");
+			titulo2.innerHTML = titulo;
+			div.appendChild(titulo2);
+		}
+		
+		function esconderDivs(idDivs)
+		{	for (let i = 0; i < idDivs.length; i++)
+			{	div = document.getElementById(idDivs[i]);
+				div.style.display = "none";
+			}
+		}
+		
+		function mostrarDiv(idDivs)
+		{	for (let i = 0; i < idDivs.length; i++)
+			{	div = document.getElementById(idDivs[i]);
+				div.style.display = "block";
+			}
+		}
+		
+		function mostrarFormularioMonografia()
+		{	inserirCabecalho("divTipo", "Monografia");
+			mostrarDiv(["divAutorPessoal", "divMonografia", "divGerar"]);
+			esconderDivs(["divArtigoRevista", "divArtigoEvento"]);
+		}
+		
+		function mostrarFormularioArtigoRevista()
+		{	inserirCabecalho("divTipo", "Artigo de revista");
+			mostrarDiv(["divAutorPessoal", "divArtigoRevista", "divGerar"]);
+			esconderDivs(["divMonografia", "divArtigoEvento"]);
+		}
+		
+		function mostrarFormularioArtigoEvento()
+		{	inserirCabecalho("divTipo", "Artigo de evento");
+			mostrarDiv(["divAutorPessoal", "divArtigoEvento", "divGerar"]);
+			esconderDivs(["divMonografia", "divArtigoRevista"]);
+		}
+	</script>
+  </head>
+  <body>
+	<div>
+		<h1>Gerador de Referências</h1>
+	</div>
+	<div>
+		<h2>Escolha o tipo</h2>
+		<ul>
+			<li><button type="button" onclick="mostrarFormularioMonografia()">Monografia</button></li>
+			<li><button type="button" onclick="mostrarFormularioArtigoRevista()">Artigo de revista</button></li>
+			<li><button type="button" onclick="mostrarFormularioArtigoEvento()">Artigo de evento</button></li>
+		</ul>
+	</div>
+	<div id="divTipo">
+	</div>
+	<form method="POST">
+		<div id="divAutorPessoal" style="display: none;">	
+			<p>Último sobrenome: <input type="text" id="ultimo_nome"></p>	
+			<p>	Primeiros nomes ou iniciais: <input type="text" id="iniciais"></p>	
+		</div>
+		<div id="divMonografia" style="display: none;">
+			<p>Título: <input type="text" id="titulo"></p>
+			<p>Edição: <input type="text" id="edicao"></p>
+			<p>Local: <input type="text" id="local"></p>
+			<p>Editora: <input type="text" id="editora"></p>
+			<p>Ano: <input type="text" id="ano"></p>
+		</div>
+	</form>
+	<div id="divArtigoRevista" style="display: none;">
+		<p>Título (artigo ou matéria): <input type="text"></p>
+		<p>Título (publicação): <input type="text"></p>
+		<p>Cidade: <input type="text"></p>
+		<p>Volume: <input type="text"></p>
+		<p>Número: <input type="text"></p>
+		<p>Página inicial: <input type="text"> Página final: <input type="text"></p>
+		<p>Data ou intervalo de publicação: <input type="text"></p>
+	</div>
+	
+	<div id="divArtigoEvento" style="display: none;">
+		<p>Título do trabalho: <input type="text">
+		<p>Evento: <input type="text"></p>
+		<p>Numeração do evento: <input type="text"></p>
+		<p>Ano: <input type="text"></p>
+		<p>Cidade: <input type="text"></p>
+		<p>Título do documento: <input type="text"></p>
+		<p>Local de publicação: <input type="text"></p>
+		<p>Editora: <input type="text"></p>
+		<p>Data de publicação: <input type="text"></p>
+		<p>Página inicial: <input type="text"> Página final: <input type="text"></p>
+	</div>
+	<div id="divGerar" style="display: none;">
+		<p>
+			<input type="submit" value="Gerar" onclick="gerarCitacaoReferenciaMomografia(event)">
+		</p>
+	</div>
+	<div id="divRefCit">
+		<h2>Referência e Citação</h2>
+	</div>
+  </body>
+</html>
